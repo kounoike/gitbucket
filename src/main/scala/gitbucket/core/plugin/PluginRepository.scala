@@ -14,10 +14,17 @@ object PluginRepository {
   lazy val LocalRepositoryDir = new java.io.File(PluginHome, ".repository")
   lazy val LocalRepositoryIndexFile = new java.io.File(LocalRepositoryDir, "plugins.json")
 
+  lazy val OnlineRepositoryDir = new java.io.File(PluginHome, ".onlinerepository")
+  lazy val OnlineRepositoryIndexFile = new java.io.File(OnlineRepositoryDir, "plugins.json")
+
+  lazy val OnlineRepositoryUrlBase = "https://github.com/kounoike/gitbucket-plugin-farm-test"
+
   def getPlugins(): Seq[PluginMetadata] = {
-    if(LocalRepositoryIndexFile.exists){
+    (if(LocalRepositoryIndexFile.exists){
       parsePluginJson(FileUtils.readFileToString(LocalRepositoryIndexFile, "UTF-8"))
-    } else Nil
+    } else Nil) ++ (if(OnlineRepositoryIndexFile.exists){
+      parsePluginJson(FileUtils.readFileToString(OnlineRepositoryIndexFile, "UTF-8"))
+    } else Nil)
   }
 
 }

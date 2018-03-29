@@ -81,6 +81,8 @@ class InitializeListener extends ServletContextListener with SystemSettingsServi
       // Install bundled plugins
       extractBundledPlugins(gitbucketVersion)
 
+      // Download plugins
+
       // Load plugins
       logger.info("Initialize plugins")
       PluginRegistry.initialize(event.getServletContext, loadSystemSettings(), conn)
