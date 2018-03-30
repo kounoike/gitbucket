@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory
 import akka.actor.{Actor, ActorSystem, Props}
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
 import com.github.zafarkhaja.semver.{Version => Semver}
-import gigahorse._
 import gigahorse.support.asynchttpclient.Gigahorse
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -172,9 +171,27 @@ class InitializeListener extends ServletContextListener with SystemSettingsServi
 
   private def downloadPlugins(gitbucketVersion: String): Unit = {
     Gigahorse.withHttp(Gigahorse.config) { http =>
-      val r = Gigahorse.url(PluginRepository.getOnlineReleaseAssetUrl(gitbucketVersion, PluginRepository.IndexFileName)).get
+      FileUtils.forceMkdir(PluginRepository.OnlineRepositoryDir)
+      val url = PluginRepository.getOnlineReleaseAssetUrl(gitbucketVersion, PluginRepository.IndexFileName)
+      logger.info(s"""Start downloading ${url} to ${PluginRepository.OnlineRepositoryIndexFile}""")
+      val r = Gigahorse.url(url).get
       val f = http.download(r, PluginRepository.OnlineRepositoryIndexFile)
-      Await.result(f, 120.seconds)
+      Await.result(f, 30.seconds)
+      logger.info("plugins.json downloaded")
+
+      val pluginsJson = FileUtils.readFileToString(PluginRepository.OnlineRepositoryIndexFile, "UTF-8")
+
+      val plugins = PluginRepository.parsePluginJson(pluginsJson)
+
+      plugins.foreach { plugin =>
+        val ver = plugin.versions.head
+
+        logger.info(s"""downloading ${ver.url}""")
+        val r = Gigahorse.url(ver.url).get
+        val f = http.download(r, new File(PluginRepository.OnlineRepositoryDir, ver.jarFileName.get))
+        Await.result(f, 30.seconds)
+        logger.info(s"""download completed: ${ver.jarFileName.get}""")
+      }
     }
   }
 

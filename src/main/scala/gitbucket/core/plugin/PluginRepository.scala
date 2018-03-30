@@ -48,7 +48,8 @@ case class PluginMetadata(
 case class VersionDef(
   version: String,
   url: String,
-  range: String
+  range: String,
+  jarFileName: Option[String]
 ){
   lazy val file = url.substring(url.lastIndexOf("/") + 1)
 }
