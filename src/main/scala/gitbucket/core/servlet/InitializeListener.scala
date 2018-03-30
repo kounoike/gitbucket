@@ -21,6 +21,10 @@ import org.slf4j.LoggerFactory
 import akka.actor.{Actor, ActorSystem, Props}
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
 import com.github.zafarkhaja.semver.{Version => Semver}
+import gigahorse._
+import gigahorse.support.asynchttpclient.Gigahorse
+import scala.concurrent._
+import scala.concurrent.duration._
 
 import scala.collection.JavaConverters._
 
@@ -82,6 +86,7 @@ class InitializeListener extends ServletContextListener with SystemSettingsServi
       extractBundledPlugins(gitbucketVersion)
 
       // Download plugins
+      downloadPlugins(gitbucketVersion)
 
       // Load plugins
       logger.info("Initialize plugins")
@@ -162,6 +167,14 @@ class InitializeListener extends ServletContextListener with SystemSettingsServi
       }
     } catch {
       case e: Exception => logger.error("Error in extracting bundled plugin", e)
+    }
+  }
+
+  private def downloadPlugins(gitbucketVersion: String): Unit = {
+    Gigahorse.withHttp(Gigahorse.config) { http =>
+      val r = Gigahorse.url(PluginRepository.getOnlineReleaseAssetUrl(gitbucketVersion, PluginRepository.IndexFileName)).get
+      val f = http.download(r, PluginRepository.OnlineRepositoryIndexFile)
+      Await.result(f, 120.seconds)
     }
   }
 

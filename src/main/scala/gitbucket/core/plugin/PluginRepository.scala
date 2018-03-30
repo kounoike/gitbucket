@@ -11,13 +11,18 @@ object PluginRepository {
     org.json4s.jackson.JsonMethods.parse(json).extract[Seq[PluginMetadata]]
   }
 
+  val IndexFileName = "plugins.json"
+
   lazy val LocalRepositoryDir = new java.io.File(PluginHome, ".repository")
-  lazy val LocalRepositoryIndexFile = new java.io.File(LocalRepositoryDir, "plugins.json")
+  lazy val LocalRepositoryIndexFile = new java.io.File(LocalRepositoryDir, IndexFileName)
 
   lazy val OnlineRepositoryDir = new java.io.File(PluginHome, ".onlinerepository")
   lazy val OnlineRepositoryIndexFile = new java.io.File(OnlineRepositoryDir, "plugins.json")
 
-  lazy val OnlineRepositoryUrlBase = "https://github.com/kounoike/gitbucket-plugin-farm-test"
+  val OnlineRepositoryUrlBase = "https://github.com/kounoike/gitbucket-plugin-farm-test"
+  def getOnlineReleaseAssetUrl(version: String, asset: String): String = {
+    s"""${OnlineRepositoryUrlBase}/releases/download/${version}/${asset}"""
+  }
 
   def getPlugins(): Seq[PluginMetadata] = {
     (if(LocalRepositoryIndexFile.exists){
