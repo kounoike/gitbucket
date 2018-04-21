@@ -45,10 +45,23 @@ public class JGitProvider implements StreamProvider {
     }
 
     @Override
-    public InputStream openStream(String path) {
-        if(File.separatorChar != '/'){
-            path = path.replace(File.separatorChar, '/');
+    public String getParent(String filePath) {
+        int sepPos = filePath.lastIndexOf('/');
+        if(sepPos > -1) {
+            return filePath.substring(0, filePath.lastIndexOf('/'));
         }
+        else{
+            return null;
+        }
+    }
+
+    @Override
+    public String combinePath(String dirPath, String filePath) {
+        return dirPath + "/" + filePath;
+    }
+
+    @Override
+    public InputStream openStream(String path) {
         if (path.startsWith("/")){
             path = path.substring(1);
         }
