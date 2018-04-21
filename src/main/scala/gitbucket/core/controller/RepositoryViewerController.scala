@@ -1,8 +1,8 @@
 package gitbucket.core.controller
 
 import java.io.File
-import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
+import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 import gitbucket.core.plugin.PluginRegistry
 import gitbucket.core.repo.html
 import gitbucket.core.helper
@@ -19,6 +19,7 @@ import gitbucket.core.view
 import gitbucket.core.view.helpers
 import org.scalatra.forms._
 import org.apache.commons.io.FileUtils
+import org.ec4j.core.model.PropertyType
 import org.eclipse.jgit.api.{ArchiveCommand, Git}
 import org.eclipse.jgit.archive.{TgzFormat, ZipFormat}
 import org.eclipse.jgit.dircache.{DirCache, DirCacheBuilder}
@@ -435,7 +436,7 @@ trait RepositoryViewerControllerBase extends ControllerBase {
               // Download (This route is left for backword compatibility)
               responseRawFile(git, objectId, path, repository)
             } else {
-              val econfig = EditorConfigUtil.readEditorConfig(git, id, "/" + path)
+              val props = EditorConfigUtil.readEditorConfig(git, id, path)
               html.blob(
                 branch = id,
                 repository = repository,
@@ -445,7 +446,8 @@ trait RepositoryViewerControllerBase extends ControllerBase {
                 hasWritePermission = hasDeveloperRole(repository.owner, repository.name, context.loginAccount),
                 isBlame = request.paths(2) == "blame",
                 isLfsFile = isLfsFile(git, objectId),
-                tabSize = econfig.get("tab_width").map { _.toInt }
+                tabSize = Option[java.lang.Integer](props.getValue[java.lang.Integer](PropertyType.tab_width, 8, false))
+                  .map(_.asInstanceOf[Int])
               )
             }
         } getOrElse NotFound()
