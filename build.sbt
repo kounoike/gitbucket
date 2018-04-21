@@ -22,6 +22,7 @@ scalafmtOnCompile := true
 
 // dependency settings
 resolvers ++= Seq(
+  Resolver.mavenLocal, // for develop
   Classpaths.typesafeReleases,
   Resolver.jcenterRepo,
   "amateras" at "http://amateras.sourceforge.jp/mvn/",
@@ -68,7 +69,8 @@ libraryDependencies ++= Seq(
   "com.wix"                         % "wix-embedded-mysql"           % "3.0.0" % "test",
   "ru.yandex.qatools.embed"         % "postgresql-embedded"          % "2.6" % "test",
   "net.i2p.crypto"                  % "eddsa"                        % "0.2.0",
-  "is.tagomor.woothee"              % "woothee-java"                 % "1.7.0"
+  "is.tagomor.woothee"              % "woothee-java"                 % "1.7.0",
+  "org.editorconfig" % "editorconfig-core" % "0.12.1.Final-SNAPSHOT"
 )
 
 // Compiler settings

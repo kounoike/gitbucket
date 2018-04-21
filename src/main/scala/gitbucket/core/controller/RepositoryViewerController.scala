@@ -435,6 +435,7 @@ trait RepositoryViewerControllerBase extends ControllerBase {
               // Download (This route is left for backword compatibility)
               responseRawFile(git, objectId, path, repository)
             } else {
+              val econfig = EditorConfigUtil.readEditorConfig(git, id, "/" + path)
               html.blob(
                 branch = id,
                 repository = repository,
@@ -443,7 +444,8 @@ trait RepositoryViewerControllerBase extends ControllerBase {
                 latestCommit = new JGitUtil.CommitInfo(JGitUtil.getLastModifiedCommit(git, revCommit, path)),
                 hasWritePermission = hasDeveloperRole(repository.owner, repository.name, context.loginAccount),
                 isBlame = request.paths(2) == "blame",
-                isLfsFile = isLfsFile(git, objectId)
+                isLfsFile = isLfsFile(git, objectId),
+                tabSize = econfig.get("tab_width").map { _.toInt }
               )
             }
         } getOrElse NotFound()
