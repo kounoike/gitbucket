@@ -37,6 +37,10 @@ class PluginRegistry {
   private val renderers = new ConcurrentHashMap[String, Renderer]
   renderers.put("md", MarkdownRenderer)
   renderers.put("markdown", MarkdownRenderer)
+  List("gif", "png", "bmp", "jpg", "jpeg", "jpe", "jfif").foreach { ext =>
+    renderers.put(ext, ImageRenderer)
+  }
+  renderers.put("svg", SVGRenderer)
   private val repositoryRoutings = new ConcurrentLinkedQueue[GitRepositoryRouting]
   private val accountHooks = new ConcurrentLinkedQueue[AccountHook]
   private val receiveHooks = new ConcurrentLinkedQueue[ReceiveHook]

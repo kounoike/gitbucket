@@ -2,7 +2,8 @@ package gitbucket.core.plugin
 
 import gitbucket.core.controller.Context
 import gitbucket.core.service.RepositoryService
-import gitbucket.core.view.Markdown
+import gitbucket.core.util.JGitUtil.{ContentInfo, RepositoryInfo}
+import gitbucket.core.view.{Markdown, helpers}
 import gitbucket.core.view.helpers.urlLink
 import play.twirl.api.Html
 
@@ -16,9 +17,27 @@ trait Renderer {
    */
   def render(request: RenderRequest): Html
 
+  def isEditable: Boolean = false
 }
 
-object MarkdownRenderer extends Renderer {
+trait EditableRenderer extends Renderer {
+  override def isEditable: Boolean = true
+
+}
+
+object ImageRenderer extends Renderer {
+  override def render(request: RenderRequest): Html = {
+    Html(s"""<img src="${request.rawPath}">""")
+  }
+}
+
+object SVGRenderer extends Renderer {
+  override def render(request: RenderRequest): Html = {
+    Html(request.fileContent)
+  }
+}
+
+object MarkdownRenderer extends EditableRenderer {
   override def render(request: RenderRequest): Html = {
     import request._
     Html(
@@ -34,7 +53,7 @@ object MarkdownRenderer extends Renderer {
   }
 }
 
-object DefaultRenderer extends Renderer {
+object DefaultRenderer extends EditableRenderer {
   override def render(request: RenderRequest): Html = {
     Html(s"""<tt><pre class="plain">${urlLink(request.fileContent)}</pre></tt>""")
   }
@@ -49,4 +68,19 @@ case class RenderRequest(
   enableRefsLink: Boolean,
   enableAnchor: Boolean,
   context: Context
-)
+) {
+  val rawPath = s"""${helpers.url(repository)(context)}/raw/${branch}/${filePath.mkString("/")}"""
+}
+
+case class GitRenderRequest(
+  filePath: List[String],
+  contentInfo: ContentInfo,
+  branch: String,
+  repository: RepositoryService.RepositoryInfo,
+  enableWikiLink: Boolean,
+  enableRefsLink: Boolean,
+  enableAnchor: Boolean,
+  context: Context
+) {
+  val rawPath = s"""${helpers.url(repository)(context)}/raw/${branch}/${filePath.mkString("/")}"""
+}

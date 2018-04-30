@@ -153,10 +153,29 @@ object JGitUtil {
    *
    * @param viewType "image", "large" or "other"
    * @param size total size of object in bytes
-   * @param content the string content
-   * @param charset the character encoding
+   * @param loader ObjectLoader
    */
-  case class ContentInfo(viewType: String, size: Option[Long], content: Option[String], charset: Option[String]) {
+  case class ContentInfo(viewType: String, size: Option[Long], loader: Option[ObjectLoader]) {
+
+    val contentBytes: Option[Array[Byte]] = {
+      loader.map { l =>
+        l.getCachedBytes
+      }
+    }
+
+    val content: Option[String] = {
+      loader.map { l =>
+        StringUtil.convertFromByteArray(l.getCachedBytes)
+      }
+    }
+
+    val charset: Option[String] = {
+      if (loader.isDefined) {
+        Some(StringUtil.detectEncoding(loader.get.getCachedBytes()))
+      } else {
+        Some("UTF-8")
+      }
+    }
 
     /**
      * the line separator of this content ("LF" or "CRLF")
@@ -975,7 +994,7 @@ object JGitUtil {
       val isLfs = isLfsPointer(loader)
       val large = FileUtil.isLarge(loader.getSize)
       val viewer = if (FileUtil.isImage(path)) "image" else if (large) "large" else "other"
-      val bytes = if (viewer == "other") JGitUtil.getContentFromId(git, objectId, false) else None
+      val bytes = if (viewer == "other" || viewer == "image") JGitUtil.getContentFromId(git, objectId, false) else None
       val size = Some(getContentSize(loader))
 
       if (viewer == "other") {
@@ -984,16 +1003,18 @@ object JGitUtil {
           ContentInfo(
             "text",
             size,
-            Some(StringUtil.convertFromByteArray(bytes.get)),
-            Some(StringUtil.detectEncoding(bytes.get))
+            Some(loader)
           )
         } else {
           // binary
-          ContentInfo("binary", size, None, None)
+          ContentInfo("binary", size, Some(loader))
         }
+      } else if (viewer == "image") {
+        // image
+        ContentInfo("image", size, Some(loader))
       } else {
-        // image or large
-        ContentInfo(viewer, size, None, None)
+        // large
+        ContentInfo(viewer, size, Some(loader))
       }
     }
   }

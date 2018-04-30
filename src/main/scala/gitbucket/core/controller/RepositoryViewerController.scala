@@ -277,7 +277,7 @@ trait RepositoryViewerControllerBase extends ControllerBase {
         repository = repository,
         pathList = if (path.length == 0) Nil else path.split("/").toList,
         fileName = None,
-        content = JGitUtil.ContentInfo("text", None, None, Some("UTF-8")),
+        content = JGitUtil.ContentInfo("text", None, None),
         protectedBranch = protectedBranch,
         commit = revCommit.getName
       )
