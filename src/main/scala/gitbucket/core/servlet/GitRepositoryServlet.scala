@@ -61,7 +61,7 @@ class GitRepositoryServlet extends GitServlet with SystemSettingsService {
     } else {
       // response for git client
       withLockRepository(req) {
-        service(req, res)
+        super.service(req, res)
       }
     }
   }
