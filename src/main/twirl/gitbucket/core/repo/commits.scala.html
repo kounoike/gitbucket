@@ -40,6 +40,13 @@
           @if(i != 0){ <tr> }
           <td>
             <div class="pull-right text-right">
+              @commit.isVerified.map{ v =>
+                @if(v) {
+                  <span>Verified</span>
+                }else{
+                  <span>Not Verified</span>
+                }
+              }
               @defining(getTags(commit.id)) { tags =>
                 @if(tags.nonEmpty){
                   <span class="muted">

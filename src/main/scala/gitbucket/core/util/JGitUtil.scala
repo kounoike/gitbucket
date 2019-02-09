@@ -1,6 +1,6 @@
 package gitbucket.core.util
 
-import java.io.{ByteArrayOutputStream, File, FileInputStream, InputStream}
+import java.io._
 
 import gitbucket.core.service.RepositoryService
 import org.eclipse.jgit.api.Git
@@ -22,6 +22,10 @@ import java.util.Date
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
+import org.bouncycastle.bcpg.ArmoredInputStream
+import org.bouncycastle.openpgp.{PGPPublicKeyRing, PGPSignatureList, PGPUtil}
+import org.bouncycastle.openpgp.bc.BcPGPObjectFactory
+import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider
 import org.cache2k.Cache2kBuilder
 import org.eclipse.jgit.api.errors._
 import org.eclipse.jgit.diff.{DiffEntry, DiffFormatter, RawTextComparator}
@@ -99,7 +103,8 @@ object JGitUtil {
     authorEmailAddress: String,
     commitTime: Date,
     committerName: String,
-    committerEmailAddress: String
+    committerEmailAddress: String,
+    isVerified: Option[Boolean]
   ) {
 
     def this(rev: org.eclipse.jgit.revwalk.RevCommit) =
@@ -113,7 +118,56 @@ object JGitUtil {
         rev.getAuthorIdent.getEmailAddress,
         rev.getCommitterIdent.getWhen,
         rev.getCommitterIdent.getName,
-        rev.getCommitterIdent.getEmailAddress
+        rev.getCommitterIdent.getEmailAddress,
+        None
+      )
+
+    def this(rev: org.eclipse.jgit.revwalk.RevCommit, git: Git) =
+      this(
+        rev.getName,
+        rev.getShortMessage,
+        rev.getFullMessage,
+        rev.getParents().map(_.name).toList,
+        rev.getAuthorIdent.getWhen,
+        rev.getAuthorIdent.getName,
+        rev.getAuthorIdent.getEmailAddress,
+        rev.getCommitterIdent.getWhen,
+        rev.getCommitterIdent.getName,
+        rev.getCommitterIdent.getEmailAddress,
+        Option(rev.getRawGpgSignature).map { s =>
+          println(new String(s))
+
+          val pubKeyArmored =
+            "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\n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\nt5WfzcRGiNM3A3fl\n=5DBa\n-----END PGP PUBLIC KEY BLOCK-----"
+
+          val pubKeyOf =
+            new BcPGPObjectFactory(new ArmoredInputStream(new ByteArrayInputStream(pubKeyArmored.getBytes)))
+          val pubKey = pubKeyOf.nextObject().asInstanceOf[PGPPublicKeyRing].getPublicKey
+
+          val obj = git.getRepository.getObjectDatabase.open(rev).getBytes
+          println(obj.size)
+          val strObj = new String(obj, "UTF-8")
+          val target = strObj
+            .substring(0, strObj.indexOf("gpgsig -----BEGIN PGP SIGNATURE-----")) + "\n" + rev.getFullMessage
+          println("*************")
+          println(target)
+          println("*************")
+          println("[rawbuffer]")
+          println(new String(rev.getRawBuffer))
+          println("*************")
+
+          val of = new BcPGPObjectFactory(new ArmoredInputStream(new ByteArrayInputStream(s)))
+          val sigList = of.nextObject().asInstanceOf[PGPSignatureList]
+          sigList
+            .iterator()
+            .asScala
+            .find { sig =>
+              sig.init(new BcPGPContentVerifierBuilderProvider(), pubKey)
+              sig.update(target.getBytes("UTF-8"))
+              !sig.verify
+            }
+            .isEmpty
+        }
       )
 
     val summary = getSummaryMessage(fullMessage, shortMessage)
@@ -522,7 +576,7 @@ object JGitUtil {
           getCommitLog(
             i,
             count + 1,
-            if (limit <= 0 || (fixedPage - 1) * limit <= count) logs :+ new CommitInfo(commit) else logs
+            if (limit <= 0 || (fixedPage - 1) * limit <= count) logs :+ new CommitInfo(commit, git) else logs
           )
         }
         case _ => (logs, i.hasNext)
@@ -552,9 +606,9 @@ object JGitUtil {
         case true => {
           val revCommit = i.next
           if (endCondition(revCommit)) {
-            if (includesLastCommit) logs :+ new CommitInfo(revCommit) else logs
+            if (includesLastCommit) logs :+ new CommitInfo(revCommit, git) else logs
           } else {
-            getCommitLog(i, logs :+ new CommitInfo(revCommit))
+            getCommitLog(i, logs :+ new CommitInfo(revCommit, git))
           }
         }
         case false => logs
