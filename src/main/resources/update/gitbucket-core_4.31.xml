@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<changeSet>
+  <addColumn tableName="REPOSITORY">
+    <column name="REPOSITORY_ID" type="int" nullable="false" autoIncrement="true"/>
+  </addColumn>
+  <addColumn tableName="WEB_HOOK">
+    <column name="WEBHOOK_ID" type="int" nullable="false" autoIncrement="true"/>
+  </addColumn>
+</changeSet>
