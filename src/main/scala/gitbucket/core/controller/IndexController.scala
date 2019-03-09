@@ -188,7 +188,13 @@ trait IndexControllerBase extends ControllerBase {
     params
       .get("client_id")
       .map { client_id =>
-        gitbucket.core.html.oauth_login(client_id, params.get("state"))
+        gitbucket.core.html.oauth_login(
+          client_id,
+          params.get("state"),
+          flash.get("userName"),
+          flash.get("password"),
+          flash.get("error")
+        )
       }
       .getOrElse(NotFound())
   }
