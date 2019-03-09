@@ -4,6 +4,7 @@ import java.net.URI
 
 import com.nimbusds.oauth2.sdk.id.State
 import com.nimbusds.openid.connect.sdk.Nonce
+import gitbucket.core.api.JsonFormat
 import gitbucket.core.helper.xml
 import gitbucket.core.model.Account
 import gitbucket.core.service._
@@ -49,7 +50,32 @@ trait IndexControllerBase extends ControllerBase {
     "hash" -> trim(optional(text()))
   )(SignInForm.apply)
 
-//  val searchForm = mapping(
+  case class OAuthForm(userName: String, password: String, client_id: String, state: String)
+
+  val oAuthForm = mapping(
+    "userName" -> trim(label("Username", text(required))),
+    "password" -> trim(label("Password", text(required))),
+    "client_id" -> trim(text(required)),
+    "state" -> trim(text(required))
+  )(OAuthForm.apply)
+
+  case class OAuthAccessTokenForm(
+    client_id: String,
+    client_secret: String,
+    code: String,
+    grant_type: String,
+    state: String
+  )
+
+  val oAuthAccessTokenForm = mapping(
+    "client_id" -> text(required),
+    "client_secret" -> text(required),
+    "code" -> text(required),
+    "grant_type" -> text(required),
+    "state" -> text(required)
+  )(OAuthAccessTokenForm.apply)
+
+  //  val searchForm = mapping(
 //    "query"      -> trim(text(required)),
 //    "owner"      -> trim(text(required)),
 //    "repository" -> trim(text(required))
@@ -152,6 +178,41 @@ trait IndexControllerBase extends ControllerBase {
   get("/signout") {
     session.invalidate
     redirect("/")
+  }
+
+  /**
+   * Handle OAuth2 Request a user's GitBucket identity
+   * https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/#1-request-a-users-github-identity
+   */
+  get("/login/oauth/authorize") {
+    params
+      .get("client_id")
+      .map { client_id =>
+        gitbucket.core.html.oauth_login(client_id, params.get("state"))
+      }
+      .getOrElse(NotFound())
+  }
+
+  post("/login/oauth/authorize", oAuthForm) { form =>
+    authenticate(context.settings, form.userName, form.password) match {
+      case Some(account) =>
+        redirect(s"https://ddefca7d.ngrok.io/login?code=hogehogecode&state=${form.state}")
+      case None =>
+        flash += "userName" -> form.userName
+        flash += "password" -> form.password
+        flash += "error" -> "Sorry, your Username and/or Password is incorrect. Please try again."
+        redirect(s"/login/oauth/authorize?client_id=${form.client_id}&state=${form.state}")
+    }
+  }
+
+  post("/login/oauth/access_token", oAuthAccessTokenForm) { form =>
+    JsonFormat(
+      Map(
+        "access_token" -> "gitbucket_access_token",
+        "scope" -> "read:org,repo,user:email",
+        "token_type" -> "bearer"
+      )
+    )
   }
 
   get("/activities.atom") {

