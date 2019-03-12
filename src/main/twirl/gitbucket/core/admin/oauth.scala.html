@@ -1,0 +1,54 @@
+@(apps: List[gitbucket.core.model.OAuthApplication], info: Option[Any])(implicit context: gitbucket.core.controller.Context)
+@gitbucket.core.html.main("OAuth applications"){
+  @gitbucket.core.admin.html.menu("oauth") {
+    @gitbucket.core.helper.html.information(info)
+    <h1 class="system-settings-title">OAuth applications</h1>
+    <h2>Registered applications</h2>
+    @if(apps.nonEmpty){
+      @apps.map { app =>
+        <div class="panel panel-default">
+          <div class="panel-heading strong">@app.applicationName</div>
+          <div class="panel-body">
+            <table class="table">
+              <tr><th>Homepage URL: </th><td>@app.homepageUrl</td></tr>
+              <tr><th>Callback URL: </th><td>@app.callbackUrl</td></tr>
+              @app.description.map{ d => <tr><th>Description: </th><td>@d</td></tr> }
+              <tr><th>Client ID: </th><td>@app.clientId</td></tr>
+              <tr><th>Client Secret: </th><td>@app.clientSecret</td></tr>
+            </table>
+          </div>
+        </div>
+      }
+    }else{
+      <p>No OAuth applications.</p>
+    }
+    <div class="panel panel-default">
+      <div class="panel-heading strong">New OAuth application</div>
+      <div class="panel-body">
+        <form action="@context.path/admin/oauth" method="POST" validate="true" autocomplete="off">
+          <fieldset class="form-group">
+            <label for="applicationName" class="strong">Application Name:</label>
+            <input type="text" name="applicationName" id="applicationName" class="form-control" value=""/>
+            <span id="error-applicationName" class="error"></span>
+          </fieldset>
+          <fieldset class="form-group">
+            <label for="homepageUrl" class="strong">Homepage URL:</label>
+            <input type="text" name="homepageUrl" id="homepageUrl" class="form-control" value=""/>
+            <span id="error-homepageUrl" class="error"></span>
+          </fieldset>
+          <fieldset class="form-group">
+            <label for="description" class="strong">Application description(optional):</label>
+            <input type="text" name="description" id="description" class="form-control" value=""/>
+            <span id="error-description" class="error"></span>
+          </fieldset>
+          <fieldset class="form-group">
+            <label for="callbackUrl" class="strong">Authorization callback URL:</label>
+            <input type="text" name="callbackUrl" id="callbackUrl" class="form-control" value=""/>
+            <span id="error-callbackUrl" class="error"></span>
+          </fieldset>
+          <input type="submit" class="btn btn-success" value="Register application">
+        </form>
+      </div>
+    </div>
+  }
+}

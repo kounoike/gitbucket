@@ -7,7 +7,7 @@ import gitbucket.core.GitBucketCoreModule
 import gitbucket.core.admin.html
 import gitbucket.core.plugin.{PluginInfoBase, PluginRegistry, PluginRepository}
 import gitbucket.core.service.SystemSettingsService._
-import gitbucket.core.service.{AccountService, RepositoryService}
+import gitbucket.core.service.{AccountService, OAuthApplicationService, RepositoryService}
 import gitbucket.core.ssh.SshServer
 import gitbucket.core.util.Directory._
 import gitbucket.core.util.Implicits._
@@ -28,13 +28,14 @@ class SystemSettingsController
     extends SystemSettingsControllerBase
     with AccountService
     with RepositoryService
+    with OAuthApplicationService
     with AdminAuthenticator
 
 case class Table(name: String, columns: Seq[Column])
 case class Column(name: String, primaryKey: Boolean)
 
 trait SystemSettingsControllerBase extends AccountManagementControllerBase {
-  self: AccountService with RepositoryService with AdminAuthenticator =>
+  self: AccountService with RepositoryService with OAuthApplicationService with AdminAuthenticator =>
 
   private val form = mapping(
     "baseUrl" -> trim(label("Base URL", optional(text()))),
@@ -224,6 +225,20 @@ trait SystemSettingsControllerBase extends AccountManagementControllerBase {
     "clearImage" -> trim(label("Clear image", boolean())),
     "removed" -> trim(label("Disable", boolean()))
   )(EditGroupForm.apply)
+
+  case class NewOAuthAppForm(
+    appName: String,
+    homepageUrl: String,
+    description: Option[String],
+    callbackUrl: String
+  )
+
+  val newOAuthAppForm = mapping(
+    "applicationName" -> trim(label("Application name", text(required, maxlength(100)))),
+    "homepageUrl" -> trim(label("Homepage URL", text(required))),
+    "description" -> trim(label("Description", optional(text()))),
+    "callbackUrl" -> trim(label("Homepage URL", text(required)))
+  )(NewOAuthAppForm.apply)
 
   get("/admin/dbviewer")(adminOnly {
     val conn = request2Session(request).conn
@@ -606,6 +621,15 @@ trait SystemSettingsControllerBase extends AccountManagementControllerBase {
     }
 
     ()
+  })
+
+  get("/admin/oauth")(adminOnly {
+    html.oauth(getOAuthApplications(), None)
+  })
+
+  post("/admin/oauth", newOAuthAppForm)(adminOnly { form =>
+    insertOAuthApplication(form.appName, form.description, form.homepageUrl, form.callbackUrl)
+    redirect("/admin/oauth")
   })
 
   private def members: Constraint = new Constraint() {
