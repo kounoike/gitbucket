@@ -4,6 +4,7 @@ import java.net.URI
 
 import com.nimbusds.oauth2.sdk.id.State
 import com.nimbusds.openid.connect.sdk.Nonce
+import gitbucket.core.api.JsonFormat
 import gitbucket.core.helper.xml
 import gitbucket.core.model.Account
 import gitbucket.core.service._
@@ -28,6 +29,7 @@ class IndexController
     with ReferrerAuthenticator
     with AccessTokenService
     with AccountFederationService
+    with OAuthApplicationService
     with OpenIDConnectService
 
 trait IndexControllerBase extends ControllerBase {
@@ -39,6 +41,7 @@ trait IndexControllerBase extends ControllerBase {
     with ReferrerAuthenticator
     with AccessTokenService
     with AccountFederationService
+    with OAuthApplicationService
     with OpenIDConnectService =>
 
   case class SignInForm(userName: String, password: String, hash: Option[String])
@@ -48,6 +51,29 @@ trait IndexControllerBase extends ControllerBase {
     "password" -> trim(label("Password", text(required))),
     "hash" -> trim(optional(text()))
   )(SignInForm.apply)
+
+  case class OAuthForm(client_id: String, state: Option[String])
+
+  val oAuthForm = mapping(
+    "client_id" -> trim(text(required)),
+    "state" -> trim(optional(text()))
+  )(OAuthForm.apply)
+
+  case class OAuthAccessTokenForm(
+    client_id: String,
+    client_secret: String,
+    code: String,
+    grant_type: String,
+    state: String
+  )
+
+  val oAuthAccessTokenForm = mapping(
+    "client_id" -> text(required),
+    "client_secret" -> text(required),
+    "code" -> text(required),
+    "grant_type" -> text(required),
+    "state" -> text(required)
+  )(OAuthAccessTokenForm.apply)
 
 //  val searchForm = mapping(
 //    "query"      -> trim(text(required)),
@@ -147,6 +173,47 @@ trait IndexControllerBase extends ControllerBase {
     } getOrElse {
       NotFound()
     }
+  }
+
+  /**
+   * Handle OAuth2 Request a user's GitBucket identity
+   * https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/#1-request-a-users-github-identity
+   */
+  get("/login/oauth/authorize")(usersOnly {
+    (for (clientId <- params.get("client_id");
+          app <- getOAuthApplication(clientId)) yield {
+      gitbucket.core.html.oauthlogin(
+        app,
+        params.get("state")
+      )
+    }).getOrElse(NotFound())
+  })
+
+  post("/login/oauth/authorize", oAuthForm) { form =>
+    (for (account <- context.loginAccount;
+          app <- getOAuthApplication(form.client_id)) yield {
+      val state = form.state.getOrElse("hogehogehoge")
+      val code = generateCode(account.userName, state, app)
+      redirect(s"${app.callbackUrl}?code=${code}&state=${state}")
+    }).getOrElse {
+      redirect(s"/login/oauth/authorize?client_id=${form.client_id}&state=${form.state}")
+    }
+  }
+
+  post("/login/oauth/access_token", oAuthAccessTokenForm) { form =>
+    (for (app <- getOAuthApplication(form.client_id, form.client_secret);
+          session <- getOAuthSession(form.code)
+          if session.app.clientId == form.client_id && session.app.clientSecret == form.client_secret) yield {
+      val token = generateOAuthAccessToken(session.userName, session.app)
+      deleteOAuthSession(form.code)
+      JsonFormat(
+        Map(
+          "access_token" -> token,
+          "scope" -> "read:org,repo,user:email",
+          "token_type" -> "bearer"
+        )
+      )
+    }).getOrElse(Unauthorized())
   }
 
   get("/signout") {

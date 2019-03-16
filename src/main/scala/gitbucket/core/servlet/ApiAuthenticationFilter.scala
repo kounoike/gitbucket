@@ -2,13 +2,17 @@ package gitbucket.core.servlet
 
 import javax.servlet._
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
-
 import gitbucket.core.model.Account
 import gitbucket.core.service.SystemSettingsService.SystemSettings
-import gitbucket.core.service.{AccessTokenService, AccountService, SystemSettingsService}
+import gitbucket.core.service.{AccessTokenService, AccountService, OAuthApplicationService, SystemSettingsService}
 import gitbucket.core.util.{AuthUtil, Keys}
 
-class ApiAuthenticationFilter extends Filter with AccessTokenService with AccountService with SystemSettingsService {
+class ApiAuthenticationFilter
+    extends Filter
+    with OAuthApplicationService
+    with AccessTokenService
+    with AccountService
+    with SystemSettingsService {
 
   override def init(filterConfig: FilterConfig): Unit = {}
 
@@ -22,11 +26,20 @@ class ApiAuthenticationFilter extends Filter with AccessTokenService with Accoun
       .map {
         case auth if auth.startsWith("token ") =>
           AccessTokenService.getAccountByAccessToken(auth.substring(6).trim).toRight(())
+        case auth if auth.startsWith("Bearer ") =>
+          OAuthApplicationService.getAccountByOAuthAccessToken(auth.substring(7).trim).toRight(())
         case auth if auth.startsWith("Basic ") => doBasicAuth(auth, loadSystemSettings(), request).toRight(())
         case _                                 => Left(())
       }
       .orElse {
-        Option(req.getParameter("access_token")).map(AccessTokenService.getAccountByAccessToken(_).toRight(()))
+        Option(req.getParameter("access_token")).map { token =>
+          AccessTokenService.getAccountByAccessToken(token) match {
+            case account: Account =>
+              Right(account)
+            case _ =>
+              OAuthApplicationService.getAccountByOAuthAccessToken(token).toRight(())
+          }
+        }
       }
       .orElse {
         Option(request.getSession.getAttribute(Keys.Session.LoginAccount).asInstanceOf[Account]).map(Right(_))
