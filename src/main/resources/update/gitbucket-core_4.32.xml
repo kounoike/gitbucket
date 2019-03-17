@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<changeSet>
+  <createTable tableName="OAUTH_APPLICATION">
+    <column name="APP_ID" type="int" nullable="false" autoIncrement="true" unique="true"/>
+    <column name="APP_NAME" type="varchar(100)" nullable="false"/>
+    <column name="HOMEPAGE_URL" type="varchar(500)" nullable="false"/>
+    <column name="APP_DESCRIPTION" type="text" nullable="true"/>
+    <column name="CALLBACK_URL" type="varchar(500)" nullable="false"/>
+    <column name="CLIENT_ID" type="char(20)" nullable="false"/>
+    <column name="CLIENT_SECRET" type="char(40)" nullable="false"/>
+  </createTable>
+  <addPrimaryKey constraintName="IDX_OAUTH_APPLICATION_PK" tableName="OAUTH_APPLICATION" columnNames="APP_ID"/>
+  <addUniqueConstraint constraintName="IDX_OAUTH_APPLICATION_1" tableName="OAUTH_APPLICATION" columnNames="CLIENT_ID, CLIENT_SECRET"/>
+
+  <createTable tableName="OAUTH_ACCESS_TOKEN">
+    <column name="OAUTH_ACCESS_TOKEN_ID" type="int" nullable="false" autoIncrement="true" unique="true"/>
+    <column name="OAUTH_TOKEN_HASH" type="varchar(40)" nullable="false"/>
+    <column name="OAUTH_APP_ID" type="int" nullable="false"/>
+    <column name="USER_NAME" type="varchar(100)" nullable="false"/>
+  </createTable>
+
+  <addPrimaryKey constraintName="IDX_OAUTH_ACCESS_TOKEN_PK" tableName="OAUTH_ACCESS_TOKEN" columnNames="OAUTH_ACCESS_TOKEN_ID"/>
+  <addUniqueConstraint constraintName="IDX_OAUTH_ACCESS_TOKEN_TOKEN_HASH" tableName="OAUTH_ACCESS_TOKEN" columnNames="OAUTH_TOKEN_HASH"/>
+  <addForeignKeyConstraint constraintName="IDX_OAUTH_ACCESS_TOKEN_FK0" baseTableName="OAUTH_ACCESS_TOKEN" baseColumnNames="OAUTH_APP_ID" referencedTableName="OAUTH_APPLICATION" referencedColumnNames="APP_ID" onDelete="CASCADE" onUpdate="CASCADE"/>
+  <addForeignKeyConstraint constraintName="IDX_OAUTH_ACCESS_TOKEN_FK1" baseTableName="OAUTH_ACCESS_TOKEN" baseColumnNames="USER_NAME" referencedTableName="ACCOUNT" referencedColumnNames="USER_NAME" onDelete="CASCADE" onUpdate="CASCADE"/>
+
+</changeSet>
