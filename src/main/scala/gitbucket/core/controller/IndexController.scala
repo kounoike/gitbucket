@@ -60,19 +60,19 @@ trait IndexControllerBase extends ControllerBase {
   )(OAuthForm.apply)
 
   case class OAuthAccessTokenForm(
-    client_id: String,
-    client_secret: String,
-    code: String,
-    grant_type: String,
-    state: String
+    client_id: Option[String],
+    client_secret: Option[String],
+    code: Option[String],
+    grant_type: Option[String],
+    state: Option[String]
   )
 
   val oAuthAccessTokenForm = mapping(
-    "client_id" -> text(required),
-    "client_secret" -> text(required),
-    "code" -> text(required),
-    "grant_type" -> text(required),
-    "state" -> text(required)
+    "client_id" -> optional(text()),
+    "client_secret" -> optional(text()),
+    "code" -> optional(text()),
+    "grant_type" -> optional(text()),
+    "state" -> optional(text())
   )(OAuthAccessTokenForm.apply)
 
 //  val searchForm = mapping(
@@ -201,11 +201,15 @@ trait IndexControllerBase extends ControllerBase {
   }
 
   post("/login/oauth/access_token", oAuthAccessTokenForm) { form =>
-    (for (app <- getOAuthApplication(form.client_id, form.client_secret);
-          session <- getOAuthSession(form.code)
-          if session.app.clientId == form.client_id && session.app.clientSecret == form.client_secret) yield {
+    (for (clientId <- form.client_id.orElse(params.get("client_id"));
+          clientSecret <- form.client_secret.orElse(params.get("client_secret"));
+          code <- form.code.orElse(params.get("code"));
+          state <- form.state.orElse(params.get("state"));
+          app <- getOAuthApplication(clientId, clientSecret);
+          session <- getOAuthSession(code)
+          if session.app.clientId == clientId && session.app.clientSecret == clientSecret) yield {
       val token = generateOAuthAccessToken(session.userName, session.app)
-      deleteOAuthSession(form.code)
+      deleteOAuthSession(code)
       JsonFormat(
         Map(
           "access_token" -> token,
