@@ -34,7 +34,7 @@ class ApiAuthenticationFilter
       .orElse {
         Option(req.getParameter("access_token")).map { token =>
           AccessTokenService.getAccountByAccessToken(token) match {
-            case account: Account =>
+            case Some(account) =>
               Right(account)
             case _ =>
               OAuthApplicationService.getAccountByOAuthAccessToken(token).toRight(())
