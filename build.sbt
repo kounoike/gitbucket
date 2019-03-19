@@ -8,6 +8,9 @@ val ScalatraVersion = "2.6.3"
 val JettyVersion = "9.4.14.v20181114"
 val JgitVersion = "5.2.0.201812061821-r"
 
+lazy val client = (project in file("client")).enablePlugins(ScalaJSBundlerPlugin).settings(
+)
+
 lazy val root = (project in file("."))
   .enablePlugins(SbtTwirl, ScalatraPlugin)
   .settings(
