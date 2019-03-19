@@ -8,5 +8,7 @@ addSbtPlugin("com.jsuereth"     % "sbt-pgp"              % "1.1.2")
 addSbtPlugin("com.typesafe.sbt" % "sbt-license-report"   % "1.2.0")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.2")
 addSbtPlugin("org.scoverage"    % "sbt-scoverage"        % "1.5.1")
+addSbtPlugin("com.vmunier"                  % "sbt-web-scalajs"           % "1.0.8-0.6")
+addSbtPlugin("org.scala-js"                 % "sbt-scalajs"               % "0.6.26")
 
 addSbtCoursier

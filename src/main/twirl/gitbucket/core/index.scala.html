@@ -4,6 +4,9 @@
 @import gitbucket.core.view.helpers
 @gitbucket.core.html.main("GitBucket"){
   @gitbucket.core.dashboard.html.sidebar(recentRepositories){
+    <script>
+      TutorialApp.sayHello();
+    </script>
     @context.settings.information.map { information =>
       <div class="alert alert-info" style="background-color: white; color: #555; border-color: #4183c4; font-size: small; line-height: 120%;">
         <button type="button" class="close" data-dismiss="alert">&times;</button>

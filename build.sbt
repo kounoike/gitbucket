@@ -13,6 +13,15 @@ lazy val root = (project in file("."))
   .settings(
     )
 
+lazy val client = (project in file("client")).settings(
+  libraryDependencies ++= Seq(
+    "org.scala-js" %%% "scalajs-dom" % "0.9.5"
+  ),
+  Seq(fastOptJS, fullOptJS) map { packageJSKey =>
+    crossTarget in (Compile, packageJSKey) := (baseDirectory in root).value / "src/main/webapp/assets/common/js"
+  }
+).enablePlugins(ScalaJSPlugin)
+
 sourcesInBase := false
 organization := Organization
 name := Name
