@@ -9,13 +9,15 @@ val JettyVersion = "9.4.14.v20181114"
 val JgitVersion = "5.2.0.201812061821-r"
 
 lazy val client = (project in file("client"))
-  .enablePlugins(ScalaJSBundlerPlugin)
+  .enablePlugins(ScalaJSBundlerPlugin, ScalaJSWeb)
   .settings(
     )
 
 lazy val root = (project in file("."))
-  .enablePlugins(SbtTwirl, ScalatraPlugin)
+  .enablePlugins(SbtTwirl, ScalatraPlugin, WebScalaJSBundlerPlugin)
   .settings(
+    scalaJSProjects := Seq(client),
+    pipelineStages in Assets := Seq(scalaJSPipeline)
     )
 
 sourcesInBase := false
